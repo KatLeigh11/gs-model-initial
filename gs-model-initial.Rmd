@@ -1,0 +1,184 @@
+---
+title: "gs-model-initial"
+author: "Gabriel De La Rosa"
+date: "5/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(growthrates)
+library(tidyverse)
+```
+
+Let's begin exploring Chris's simple fisheries model. Harvest is given as...
+
+h<sub>t</sub> = qE<sub>t</sub>x<sub>t</sub>
+
+where...
+
+* x<sub>t</sub> = population size
+* h<sub>t</sub> = harvest,
+* E<sub>t</sub> = fishing effort
+* q = a constant
+
+profit is...
+
+profit = p * h<sub>t</sub>
+
+where p is the price
+
+And stock growth as...
+\[x_{t+1} = x_{t} + rx_{t} (1 - \frac{x_{t}}{K}) - h_{t}\]
+
+
+where...
+
+* r = intrinsic growth rate
+* K = carrying capacity
+
+
+```{r}
+
+fish_model <- function(years, r, K, q, p, E) {
+  # Set original stock size to 1...
+  stock_size <- vector(mode = "numeric", length = years)
+  stock_size[1] <- 1
+  
+  # Set original harvest to 0...
+  harvest <- vector(mode = "numeric", length = years)
+  harvest[1] <- 0
+  
+  # Make a profit vector...
+  profit <- vector(mode = "numeric", length = years)
+  profit[1] <- 0
+  
+  # Create an iterative for loop that'll sequentially run this...
+  for(iYear in 2:years) {
+  stock_size[iYear] <- stock_size[iYear-1] + (r * stock_size[iYear-1]) * (1 - (stock_size[iYear-1]/K)) - q * E * stock_size[iYear-1]
+  }
+  
+  for(iYear in 1:years){
+  # Add in yearly harvest:
+  harvest[iYear] <- q * E * stock_size[iYear]
+  
+  # And yearly profit:
+  profit[iYear] <- p * harvest[iYear]
+  }
+  
+  # And make a data frame from both of them.
+  data.frame(year = seq(1, years, by = 1), 
+             stock_size = stock_size, 
+             harvest = harvest, 
+             profit =profit)
+}
+```
+
+``` {r}
+
+# Then, we can run it with a fishing effort of 0...
+initial_run <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 0)
+
+# And compare it to a fishing effort of 10
+second_run <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 10)
+
+# Plotting them both shows us nice things
+# First run:
+ggplot(initial_run) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+# Second run:
+ggplot(second_run) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+```
+
+Can we maximize the total profit? Let's play around with a few extremes.
+
+```{r}
+# Fishing effort of 99...
+max_run <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 99)
+
+ggplot(max_run) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+# What about a 50 fishing effort?
+run_50 <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 50)
+
+ggplot(run_50) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+# Whoa! Big jump
+run_20 <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 20)
+
+ggplot(run_20) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+# This is still going up...
+run_25 <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 25)
+ggplot(run_20) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+# Thirty is the highest!
+run_30 <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 30)
+ggplot(run_30) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+
+# And this starts dropping again
+run_40 <- fish_model(years = 100, r = 0.6, K = 100, q = .01, p = 10, E = 40)
+ggplot(run_40) +
+  geom_line(aes(x = year, y = stock_size),
+            color = "blue") +
+  geom_line(aes(x = year, 
+                y = harvest),
+                color = "red") +
+  geom_line(aes(x = year, y = profit),
+            color = "green")
+```
+
+
+### Thinking about maximizing total profit: 
+
+Can we solve for max profit mathematically?
